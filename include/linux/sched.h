@@ -1673,6 +1673,7 @@ extern struct pid *cad_pid;
 #define PF_MCE_EARLY		0x08000000      /* Early kill for mce process policy */
 #define PF_MEMALLOC_NOCMA	0x10000000	/* All allocation request will have _GFP_MOVABLE cleared */
 #define PF_MIGRATE_CUM_ADJ_TASK	0x20000000	/* cumulative task adjustment should be done */
+#define PF_PERF_CRITICAL	0x20000000	/* Thread is performance-critical */
 #define PF_FREEZER_SKIP		0x40000000	/* Freezer should not count it as freezable */
 #define PF_SUSPEND_TASK		0x80000000      /* This thread called freeze_processes() and should not be frozen */
 
