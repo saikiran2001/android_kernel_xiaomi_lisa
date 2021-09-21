@@ -133,6 +133,7 @@ static unsigned long zero_ul;
 static unsigned long one_ul = 1;
 static unsigned long long_max = LONG_MAX;
 static int one_hundred = 100;
+static int two_hundred = 200;
 static int one_thousand = 1000;
 #ifdef CONFIG_QCOM_HYP_CORE_CTL
 static int five_hundred = 500;
@@ -1776,7 +1777,11 @@ static struct ctl_table vm_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= SYSCTL_ZERO,
+#ifdef CONFIG_INCREASE_MAXIMUM_SWAPPINESS
+		.extra2         = &two_hundred,
+#else
 		.extra2		= &one_hundred,
+#endif
 	},
 	{
 		.procname       = "want_old_faultaround_pte",
