@@ -220,8 +220,7 @@
 		cam_vio-supply = <&L5I>;
 		cam_vdig-supply = <&L1I>;
 		cam_vana-supply = <&L6I>;
-		cam_vaf_supply = <&L3I>;
-
+		cam_vaf-supply = <&L3I>;
 		cam_clk-supply = <&cam_cc_titan_top_gdsc>;
 		cam_bob-supply = <&BOB>;
 		regulator-names = "cam_vio", "cam_vdig", "cam_vana", "cam_vaf", "cam_clk", "cam_bob";
