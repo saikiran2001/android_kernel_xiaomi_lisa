@@ -1304,9 +1304,9 @@ static void goodix_ts_report_finger(struct input_dev *dev,
 			if (__test_and_clear_bit(i, &core_data->touch_id)) {
 				ts_info("finger report leave:%d", i);
 			}
-			continue;
+                        */
+ 			continue;
 		}
-                */
 
 		/* ts_debug("report: id %d, x %d, y %d, w %d", i,
 			touch_data->coords[i].x, touch_data->coords[i].y,
