@@ -1300,11 +1300,14 @@ static void goodix_ts_report_finger(struct input_dev *dev,
 		if (touch_data->coords[i].status == TS_RELEASE) {
 			input_mt_slot(dev, i);
 			input_mt_report_slot_state(dev, MT_TOOL_FINGER, false);
+                        /*
 			if (__test_and_clear_bit(i, &core_data->touch_id)) {
 				ts_info("finger report leave:%d", i);
 			}
+                        */
 			continue;
 		}
+
 		/* ts_debug("report: id %d, x %d, y %d, w %d", i,
 			touch_data->coords[i].x, touch_data->coords[i].y,
 			touch_data->coords[i].p); */
@@ -1314,9 +1317,11 @@ static void goodix_ts_report_finger(struct input_dev *dev,
 				touch_data->coords[i].x);
 		input_report_abs(dev, ABS_MT_POSITION_Y,
 				touch_data->coords[i].y);
+                /*
 		if (!__test_and_set_bit(i, &core_data->touch_id)) {
 			ts_info("finger report press:%d", i);
 		}
+                */
 	}
 
 	/*first touch down and last touch up condition*/
