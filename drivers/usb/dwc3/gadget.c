@@ -2550,7 +2550,6 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 
 	dwc->last_run_stop = ktime_get();
 
-	dwc->softconnect = is_on;
 	/*
 	 * Per databook, when we want to stop the gadget, if a control transfer
 	 * is still in process, complete it and get the core into setup phase.
