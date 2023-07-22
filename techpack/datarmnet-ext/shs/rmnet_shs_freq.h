@@ -13,8 +13,7 @@
 
 #ifndef DATARMNETef19703014
 #define DATARMNETef19703014
-int DATARMNETe6e8431304(void);
-int DATARMNETdf74db7e38(void);
-void DATARMNETfb7007f025(void);
-void DATARMNET371703c28d(void);
+int DATARMNETe6e8431304(void);int DATARMNETdf74db7e38(void);void 
+DATARMNETfb7007f025(void);void DATARMNET371703c28d(void);
 #endif
+
