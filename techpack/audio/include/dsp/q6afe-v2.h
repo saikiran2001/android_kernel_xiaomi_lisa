@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
  */
+
 #ifndef __Q6AFE_V2_H__
 #define __Q6AFE_V2_H__
 #include <dsp/apr_audio-v2.h>
@@ -692,6 +694,7 @@ int afe_get_spk_v_vali_flag(void);
 void afe_get_spk_v_vali_sts(int *spk_v_vali_sts);
 void afe_set_spk_initial_cal(int initial_cal);
 void afe_set_spk_v_vali_flag(int v_vali_flag);
+int afe_send_data(phys_addr_t buf_addr_p, u32 mem_map_handle, int bytes);
 struct afe_tdm_intf_paired_rx_cfg {
 	int afe_port_id;
 	union afe_port_group_config tdm_group; /* hold tdm group config */
@@ -702,6 +705,5 @@ void afe_tdm_paired_rx_cfg_val(int intf_idx, int afe_port_id,
 	union afe_port_group_config tdm_group, struct afe_tdm_port_config tdm_port,
 	struct afe_param_id_tdm_lane_cfg tdm_lane);
 int afe_paired_rx_tdm_port_ops(int intf_idx, bool enable, atomic_t *dai_group_ref);
-int afe_send_data(phys_addr_t buf_addr_p, u32 mem_map_handle, int bytes);
 
 #endif /* __Q6AFE_V2_H__ */

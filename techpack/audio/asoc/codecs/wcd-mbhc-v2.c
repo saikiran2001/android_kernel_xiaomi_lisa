@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/slab.h>
@@ -410,14 +412,6 @@ out_micb_en:
 		break;
 	/* MICBIAS usage change */
 	case WCD_EVENT_POST_DAPM_MICBIAS_2_OFF:
-#ifdef CONFIG_TARGET_PRODUCT_TAOYAO
-	   if (mbhc->mbhc_cfg->enable_usbc_analog &&
-			(mbhc->is_hs_recording == true)) {
-			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0);
-			if (mbhc->mbhc_cb->clk_setup)
-				mbhc->mbhc_cb->clk_setup(mbhc->component, false);
-		}
-#endif
 		mbhc->is_hs_recording = false;
 		pr_debug("%s: is_capture: %d\n", __func__,
 			  mbhc->is_hs_recording);
@@ -1121,6 +1115,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 
 	if ((mbhc->current_plug == MBHC_PLUG_TYPE_NONE) &&
 	    detection_type) {
+
 		/* If moisture is present, then enable polling, disable
 		 * moisture detection and wait for interrupt
 		 */
@@ -1157,10 +1152,6 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 			mbhc->mbhc_fn->wcd_mbhc_detect_plug_type(mbhc);
 	} else if ((mbhc->current_plug != MBHC_PLUG_TYPE_NONE)
 			&& !detection_type) {
-#if defined(CONFIG_TARGET_PRODUCT_TAOYAO)
-		if (mbhc->mbhc_cb->mbhc_micbias_control)
-                mbhc->mbhc_cb->mbhc_micbias_control(component, MIC_BIAS_2,MICB2_DISABLE);
-#endif
 		/* Disable external voltage source to micbias if present */
 		if (mbhc->mbhc_cb->enable_mb_source)
 			mbhc->mbhc_cb->enable_mb_source(mbhc, false);
@@ -1216,12 +1207,8 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_ELECT_SCHMT_ISRC, 0);
 		mbhc->extn_cable_hph_rem = false;
 		wcd_mbhc_report_plug(mbhc, 0, jack_type);
-#ifdef CONFIG_TARGET_PRODUCT_TAOYAO
-		if (mbhc->mbhc_cfg->enable_usbc_analog &&
-			(mbhc->is_hs_recording == false)) {
-#else
-	    if (mbhc->mbhc_cfg->enable_usbc_analog) {
-#endif
+
+		if (mbhc->mbhc_cfg->enable_usbc_analog) {
 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0);
 			if (mbhc->mbhc_cb->clk_setup)
 				mbhc->mbhc_cb->clk_setup(
@@ -1286,21 +1273,27 @@ int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc)
 	switch (btn) {
 	case 0:
 		mask = SND_JACK_BTN_0;
+        pr_debug("%s() button is 0x%x[hook]", __func__, mask);
 		break;
 	case 1:
 		mask = SND_JACK_BTN_1;
+        pr_debug("%s() button is 0x%x[volume up]", __func__, mask);
 		break;
 	case 2:
 		mask = SND_JACK_BTN_2;
+        pr_debug("%s() button is 0x%x[volume down]", __func__, mask);
 		break;
 	case 3:
 		mask = SND_JACK_BTN_3;
+        pr_debug("%s() button is 0x%x", __func__, mask);
 		break;
 	case 4:
 		mask = SND_JACK_BTN_4;
+        pr_debug("%s() button is 0x%x", __func__, mask);
 		break;
 	case 5:
 		mask = SND_JACK_BTN_5;
+        pr_debug("%s() button is 0x%x", __func__, mask);
 		break;
 	default:
 		break;
@@ -1396,7 +1389,7 @@ static irqreturn_t wcd_mbhc_btn_press_handler(int irq, void *data)
 	}
 	mbhc->buttons_pressed |= mask;
 	mbhc->mbhc_cb->lock_sleep(mbhc, true);
-	if (queue_delayed_work(system_power_efficient_wq, &mbhc->mbhc_btn_dwork,
+	if (schedule_delayed_work(&mbhc->mbhc_btn_dwork,
 				msecs_to_jiffies(400)) == 0) {
 		WARN(1, "Button pressed twice without release event\n");
 		mbhc->mbhc_cb->lock_sleep(mbhc, false);
@@ -1451,14 +1444,14 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 				pr_debug("%s: Switch irq kicked in, ignore\n",
 					__func__);
 			} else {
-				pr_debug("%s: Reporting btn press\n",
-					 __func__);
+				pr_debug("%s: Reporting btn %#x press\n",
+					 __func__, mbhc->buttons_pressed);
 				wcd_mbhc_jack_report(mbhc,
 						     &mbhc->button_jack,
 						     mbhc->buttons_pressed,
 						     mbhc->buttons_pressed);
-				pr_debug("%s: Reporting btn release\n",
-					 __func__);
+				pr_debug("%s: Reporting btn %#x release\n",
+					 __func__, mbhc->buttons_pressed);
 				wcd_mbhc_jack_report(mbhc,
 						&mbhc->button_jack,
 						0, mbhc->buttons_pressed);
@@ -1818,10 +1811,10 @@ static int wcd_mbhc_init_gpio(struct wcd_mbhc *mbhc,
 #endif
 
 #if IS_ENABLED(CONFIG_QCOM_FSA4480_I2C)
+
 static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 					   unsigned long mode, void *ptr)
 {
-	u8 det_status = 0;
 	struct wcd_mbhc *mbhc = container_of(nb, struct wcd_mbhc, fsa_nb);
 
 	if (!mbhc)
@@ -1837,23 +1830,6 @@ static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 		/* insertion detected, enable L_DET_EN */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0);
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 1);
-
-		WCD_MBHC_REG_READ(WCD_MBHC_L_DET_EN,det_status);
-		pr_debug("%s: det_status = %x\n",__func__,det_status);
-	}
-	else if (mode == TYPEC_ACCESSORY_NONE && mbhc->current_plug == MBHC_PLUG_TYPE_NONE) {
-		mbhc->hs_detect_work_stop = true;
-		/* Disable HW FSM */
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
-		mbhc->extn_cable_hph_rem = false;
-
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_L_DET_EN, 0);
-		if (mbhc->mbhc_cb->clk_setup)
-			mbhc->mbhc_cb->clk_setup(mbhc->component, false);
-		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_MECH_DETECTION_TYPE, 1);
-		WCD_MBHC_REG_READ(WCD_MBHC_L_DET_EN,det_status);
-		pr_debug("%s: det_status = %x\n",__func__,det_status);
 	}
 	return 0;
 }
@@ -1947,7 +1923,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 		}
 	} else {
 		if (!mbhc->mbhc_fw || !mbhc->mbhc_cal)
-			queue_delayed_work(system_power_efficient_wq, &mbhc->mbhc_firmware_dwork,
+			schedule_delayed_work(&mbhc->mbhc_firmware_dwork,
 				      usecs_to_jiffies(FW_READ_TIMEOUT));
 		else
 			pr_err("%s: Skipping to read mbhc fw, 0x%pK %pK\n",

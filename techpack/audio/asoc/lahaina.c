@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
@@ -80,6 +81,8 @@
 
 #define MI2S_NUM_CHANNELS	2
 
+#define MSM_LL_QOS_VALUE	300 /* time in us to ensure LPM doesn't go in C3/C4 */
+
 #define ADSP_STATE_READY_TIMEOUT_MS 3000
 
 #define WCN_CDC_SLIM_RX_CH_MAX 2
@@ -105,11 +108,8 @@ enum {
 	TDM_7,
 	TDM_PORT_MAX,
 };
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#define TDM_MAX_SLOTS 4
-#else
+
 #define TDM_MAX_SLOTS 8
-#endif
 #define TDM_SLOT_WIDTH_BITS 32
 #define TDM_SLOT_WIDTH_BYTES TDM_SLOT_WIDTH_BITS/8
 
@@ -493,35 +493,11 @@ static struct dev_config mi2s_tx_cfg[] = {
 	[SEN_MI2S] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
 };
 
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-static struct tdm_dev_config pri_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
-	{ /* PRI TDM */
-		{ {0,   4, 0xFFFF} }, /* RX_0 */
-		{ {0xFFFF} }, /* RX_1 */
-		{ {0xFFFF} }, /* RX_2 */
-		{ {0xFFFF} }, /* RX_3 */
-		{ {0xFFFF} }, /* RX_4 */
-		{ {0xFFFF} }, /* RX_5 */
-		{ {0xFFFF} }, /* RX_6 */
-		{ {0xFFFF} }, /* RX_7 */
-	},
-	{
-		{ {0,   4, 0xFFFF} }, /* TX_0 */
-		{ {0xFFFF} }, /* TX_1 */
-		{ {0xFFFF} }, /* TX_2 */
-		{ {0xFFFF} }, /* TX_3 */
-		{ {0xFFFF} }, /* TX_4 */
-		{ {0xFFFF} }, /* TX_5 */
-		{ {0xFFFF} }, /* TX_6 */
-		{ {0xFFFF} }, /* TX_7 */
-	},
-};
-#else
 static struct tdm_dev_config pri_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 	{ /* PRI TDM */
 		{ {0,   4, 0xFFFF} }, /* RX_0 */
 		{ {8,  12, 0xFFFF} }, /* RX_1 */
-#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA) || defined(CONFIG_TARGET_PRODUCT_ZIJIN)
+#if defined(CONFIG_TARGET_PRODUCT_LISA)
 		{ {0xFFFF} }, /* RX_2 */
 		{ {0xFFFF} }, /* RX_3 */
 #else
@@ -534,7 +510,7 @@ static struct tdm_dev_config pri_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 		{ {0xFFFF} }, /* RX_7 */
 	},
 	{
-#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA) || defined(CONFIG_TARGET_PRODUCT_ZIJIN)
+#if defined(CONFIG_TARGET_PRODUCT_LISA)
 		{ {0,   4, 0xFFFF} }, /* TX_0 */
 		{ {8,  12, 0xFFFF} }, /* TX_1 */
 		{ {0xFFFF} }, /* TX_2 */
@@ -551,7 +527,6 @@ static struct tdm_dev_config pri_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 		{ {0xFFFF} }, /* TX_7 */
 	},
 };
-#endif
 
 static struct tdm_dev_config sec_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 	{ /* SEC TDM */
@@ -576,30 +551,6 @@ static struct tdm_dev_config sec_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 	},
 };
 
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-static struct tdm_dev_config tert_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
-	{ /* TERT TDM */
-		{ {0,   4, 0xFFFF} }, /* RX_0 */
-		{ {16, 20, 0xFFFF} }, /* RX_1 */
-		{ {16, 20, 0xFFFF} }, /* RX_2 */
-		{ {24, 28, 0xFFFF} }, /* RX_3 */
-		{ {0xFFFF} }, /* RX_4 */
-		{ {0xFFFF} }, /* RX_5 */
-		{ {0xFFFF} }, /* RX_6 */
-		{ {0xFFFF} }, /* RX_7 */
-	},
-	{
-		{ {0,   4, 0xFFFF} }, /* TX_0 */
-		{ {8,  12, 0xFFFF} }, /* TX_1 */
-		{ {16, 20, 0xFFFF} }, /* TX_2 */
-		{ {24, 28, 0xFFFF} }, /* TX_3 */
-		{ {0xFFFF} }, /* TX_4 */
-		{ {0xFFFF} }, /* TX_5 */
-		{ {0xFFFF} }, /* TX_6 */
-		{ {0xFFFF} }, /* TX_7 */
-	},
-};
-#else
 static struct tdm_dev_config tert_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 	{ /* TERT TDM */
 		{ {0,   4,   8,   12, 0xFFFF} }, /* RX_0 */
@@ -622,7 +573,6 @@ static struct tdm_dev_config tert_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 		{ {0xFFFF} }, /* TX_7 */
 	},
 };
-#endif
 
 static struct tdm_dev_config quat_tdm_dev_config[MAX_PATH][TDM_PORT_MAX] = {
 	{ /* QUAT TDM */
@@ -1003,8 +953,8 @@ static struct wcd_mbhc_config wcd_mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = true,
 	.key_code[0] = KEY_MEDIA,
-	.key_code[1] = KEY_VOLUMEUP,
-	.key_code[2] = KEY_VOLUMEDOWN,
+	.key_code[1] = BTN_1,
+	.key_code[2] = BTN_2,
 	.key_code[3] = 0,
 	.key_code[4] = 0,
 	.key_code[5] = 0,
@@ -1020,6 +970,65 @@ static struct wcd_mbhc_config wcd_mbhc_cfg = {
 
 /* set audio task affinity to core 1 & 2 */
 static const unsigned int audio_core_list[] = {1, 2};
+static cpumask_t audio_cpu_map = CPU_MASK_NONE;
+static struct dev_pm_qos_request *msm_audio_req;
+static unsigned int qos_client_active_cnt;
+
+static void msm_audio_add_qos_request(void)
+{
+	int i;
+	int cpu = 0;
+
+	msm_audio_req = kcalloc(num_possible_cpus(),
+		sizeof(struct dev_pm_qos_request), GFP_KERNEL);
+	if (!msm_audio_req)
+		return;
+
+	for (i = 0; i < ARRAY_SIZE(audio_core_list); i++) {
+		if (audio_core_list[i] >= num_possible_cpus())
+			pr_err("%s incorrect cpu id: %d specified.\n",
+				__func__, audio_core_list[i]);
+		else
+			cpumask_set_cpu(audio_core_list[i], &audio_cpu_map);
+	}
+
+	for_each_cpu(cpu, &audio_cpu_map) {
+		dev_pm_qos_add_request(get_cpu_device(cpu),
+			&msm_audio_req[cpu],
+			DEV_PM_QOS_RESUME_LATENCY,
+			PM_QOS_CPU_LATENCY_DEFAULT_VALUE);
+		pr_debug("%s set cpu affinity to core %d.\n", __func__, cpu);
+	}
+}
+
+static void msm_audio_remove_qos_request(void)
+{
+	int cpu = 0;
+
+	if (msm_audio_req) {
+		for_each_cpu(cpu, &audio_cpu_map) {
+			dev_pm_qos_remove_request(
+				&msm_audio_req[cpu]);
+			pr_debug("%s remove cpu affinity of core %d.\n",
+				__func__, cpu);
+		}
+		kfree(msm_audio_req);
+	}
+}
+
+static void msm_audio_update_qos_request(u32 latency)
+{
+	int cpu = 0;
+
+	if (msm_audio_req) {
+		for_each_cpu(cpu, &audio_cpu_map) {
+			dev_pm_qos_update_request(
+				&msm_audio_req[cpu], latency);
+			pr_debug("%s update latency of core %d to %ul.\n",
+				__func__, cpu, latency);
+		}
+	}
+}
 
 static inline int param_is_mask(int p)
 {
@@ -3962,12 +3971,9 @@ static const struct snd_kcontrol_new msm_common_snd_controls[] = {
 	SOC_ENUM_EXT("PRI_TDM_RX_0 SampleRate", tdm_rx_sample_rate,
 			tdm_rx_sample_rate_get,
 			tdm_rx_sample_rate_put),
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#else
 	SOC_ENUM_EXT("PRI_TDM_RX_1 SampleRate", tdm_rx_sample_rate,
 			tdm_rx_sample_rate_get,
 			tdm_rx_sample_rate_put),
-#endif
 	SOC_ENUM_EXT("SEC_TDM_RX_0 SampleRate", tdm_rx_sample_rate,
 			tdm_rx_sample_rate_get,
 			tdm_rx_sample_rate_put),
@@ -4083,12 +4089,9 @@ static const struct snd_kcontrol_new msm_common_snd_controls[] = {
 	SOC_ENUM_EXT("PRI_TDM_RX_0 Format", tdm_rx_format,
 			tdm_rx_format_get,
 			tdm_rx_format_put),
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#else
 	SOC_ENUM_EXT("PRI_TDM_RX_1 Format", tdm_rx_format,
 			tdm_rx_format_get,
 			tdm_rx_format_put),
-#endif
 	SOC_ENUM_EXT("SEC_TDM_RX_0 Format", tdm_rx_format,
 			tdm_rx_format_get,
 			tdm_rx_format_put),
@@ -4182,12 +4185,9 @@ static const struct snd_kcontrol_new msm_common_snd_controls[] = {
 	SOC_ENUM_EXT("PRI_TDM_RX_0 Channels", tdm_rx_chs,
 			tdm_rx_ch_get,
 			tdm_rx_ch_put),
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#else
 	SOC_ENUM_EXT("PRI_TDM_RX_1 Channels", tdm_rx_chs,
 			tdm_rx_ch_get,
 			tdm_rx_ch_put),
-#endif
 	SOC_ENUM_EXT("SEC_TDM_RX_0 Channels", tdm_rx_chs,
 			tdm_rx_ch_get,
 			tdm_rx_ch_put),
@@ -4428,8 +4428,6 @@ static int msm_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 		rate->min = rate->max = tdm_rx_cfg[TDM_PRI][TDM_0].sample_rate;
 		break;
 
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#else
 	case MSM_BACKEND_DAI_PRI_TDM_RX_1:
 		channels->min = channels->max =
 				tdm_rx_cfg[TDM_PRI][TDM_1].channels;
@@ -4437,7 +4435,6 @@ static int msm_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 			       tdm_rx_cfg[TDM_PRI][TDM_1].bit_format);
 		rate->min = rate->max = tdm_rx_cfg[TDM_PRI][TDM_1].sample_rate;
 		break;
-#endif
 
 	case MSM_BACKEND_DAI_PRI_TDM_TX_0:
 		channels->min = channels->max =
@@ -4891,7 +4888,7 @@ static int lahaina_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 			__func__, cpu_dai->id);
 		return -EINVAL;
 	}
-#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA) || defined(CONFIG_TARGET_PRODUCT_ZIJIN) || defined(CONFIG_TARGET_PRODUCT_REDWOOD)
+#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA)
 	if (slots == TDM_MAX_SLOTS) {
 		slots = TDM_MAX_SLOTS / 2;
 		pr_debug("%s: dai id = 0x%x update slots = %d\n", __func__, cpu_dai->id, slots);
@@ -5002,10 +4999,7 @@ static int msm_get_tdm_mode(u32 port_id)
 
 	switch (port_id) {
 	case AFE_PORT_ID_PRIMARY_TDM_RX:
-#if defined(CONFIG_TARGET_PRODUCT_REDWOOD)
-#else
 	case AFE_PORT_ID_PRIMARY_TDM_RX_1:
-#endif
 	case AFE_PORT_ID_PRIMARY_TDM_TX:
 		tdm_mode = TDM_PRI;
 		break;
@@ -5396,6 +5390,28 @@ err:
 	return ret;
 }
 
+static int msm_fe_qos_prepare(struct snd_pcm_substream *substream)
+{
+	if (pm_qos_request_active(&substream->latency_pm_qos_req))
+		pm_qos_remove_request(&substream->latency_pm_qos_req);
+
+	qos_client_active_cnt++;
+	if (qos_client_active_cnt == 1)
+		msm_audio_update_qos_request(MSM_LL_QOS_VALUE);
+
+	return 0;
+}
+
+static void msm_fe_qos_shutdown(struct snd_pcm_substream *substream)
+{
+	(void)substream;
+
+	if (qos_client_active_cnt > 0)
+		qos_client_active_cnt--;
+	if (qos_client_active_cnt == 0)
+		msm_audio_update_qos_request(PM_QOS_CPU_LATENCY_DEFAULT_VALUE);
+}
+
 void mi2s_disable_audio_vote(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -5675,6 +5691,11 @@ static struct snd_soc_ops lahaina_tdm_be_ops = {
 static struct snd_soc_ops msm_mi2s_be_ops = {
 	.startup = msm_mi2s_snd_startup,
 	.shutdown = msm_mi2s_snd_shutdown,
+};
+
+static struct snd_soc_ops msm_fe_qos_ops = {
+	.prepare = msm_fe_qos_prepare,
+	.shutdown = msm_fe_qos_shutdown,
 };
 
 static struct snd_soc_ops msm_cdc_dma_be_ops = {
@@ -5997,6 +6018,7 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		/* this dainlink has playback support */
 		.ignore_pmdown_time = 1,
 		.id = MSM_FRONTEND_DAI_MULTIMEDIA5,
+		.ops = &msm_fe_qos_ops,
 		SND_SOC_DAILINK_REG(multimedia5),
 	},
 	{/* hw:x,10 */
@@ -6051,6 +6073,7 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		.ignore_pmdown_time = 1,
 		 /* this dainlink has playback support */
 		.id = MSM_FRONTEND_DAI_MULTIMEDIA8,
+		.ops = &msm_fe_qos_ops,
 		SND_SOC_DAILINK_REG(multimedia8),
 	},
 	/* HDMI Hostless */
@@ -6256,6 +6279,7 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		.ignore_pmdown_time = 1,
 		 /* this dainlink has playback support */
 		.id = MSM_FRONTEND_DAI_MULTIMEDIA16,
+		.ops = &msm_fe_qos_ops,
 		SND_SOC_DAILINK_REG(multimedia16),
 	},
 	{/* hw:x,30 */
@@ -6281,7 +6305,7 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		.ignore_suspend = 1,
 		SND_SOC_DAILINK_REG(tx3_cdcdma_hostless),
 	},
-#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA) || defined(CONFIG_TARGET_PRODUCT_ZIJIN) || defined(CONFIG_TARGET_PRODUCT_REDWOOD)
+#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA)
 	{/* hw:x,32 */
 		.name = "PRI_TDM_TX_0_HOSTLESS",
 		.stream_name = "PRI_TDM_TX_0_HOSTLESS Capture",
@@ -6307,20 +6331,6 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		.ignore_pmdown_time = 1,
 		SND_SOC_DAILINK_REG(tert_mi2s_tx_hostless),
 	},
-#endif
-#if defined(CONFIG_TARGET_PRODUCT_TAOYAO)
-{/* hw:x,32 */
-  		.name = "Primary MI2S TX_Hostless",
-  		.stream_name = "Primary MI2S_TX Hostless Capture",
-  		.dynamic = 1,
-  		.dpcm_capture = 1,
-  		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
-  				SND_SOC_DPCM_TRIGGER_POST},
-  		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
-  		.ignore_suspend = 1,
-  		.ignore_pmdown_time = 1,
-  		SND_SOC_DAILINK_REG(pri_mi2s_tx_hostless),
-  	},
 #endif
 };
 
@@ -6660,7 +6670,7 @@ static struct snd_soc_dai_link msm_common_be_dai_links[] = {
 		.ignore_pmdown_time = 1,
 		SND_SOC_DAILINK_REG(pri_tdm_rx_0),
 	},
-#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA) || defined(CONFIG_TARGET_PRODUCT_ZIJIN) || defined(CONFIG_TARGET_PRODUCT_REDWOOD)
+#if defined(CONFIG_TARGET_PRODUCT_LISA) || defined(CONFIG_TARGET_PRODUCT_MONA)
 	{
 		.name = LPASS_BE_PRI_TDM_RX_1,
 		.stream_name = "Primary TDM1 Playback",
@@ -6720,7 +6730,7 @@ static struct snd_soc_dai_link msm_common_be_dai_links[] = {
 		.ignore_pmdown_time = 1,
 		SND_SOC_DAILINK_REG(tert_tdm_rx_0),
 	},
-#if defined(CONFIG_SND_SOC_TFA9874) || defined(CONFIG_SND_SOC_AW88263S_TDM) || defined(CONFIG_SND_SOC_AW88263S_M20_TDM) 
+#if defined(CONFIG_SND_SOC_TFA9874) || defined(CONFIG_SND_SOC_AW88263S_TDM)
 #else
 	{
 		.name = LPASS_BE_TERT_TDM_RX_1,
@@ -7747,7 +7757,7 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 	if (!is_wcd937x)
 		ret = wcd938x_mbhc_hs_detect(component, &wcd_mbhc_cfg);
 	else
-		panic("Device is wcd937x, which is unsupported");
+		ret = wcd937x_mbhc_hs_detect(component, &wcd_mbhc_cfg);
 	if (ret) {
 		dev_err(component->dev, "%s: mbhc hs detect failed, err:%d\n",
 			__func__, ret);
@@ -7873,6 +7883,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 					sizeof(msm_mi2s_be_dai_links));
 				total_links +=
 					ARRAY_SIZE(msm_mi2s_be_dai_links);
+				dev_info(dev, "%s: Using msm_mi2s_be_dai_links\n", __func__);
 			}
 		}
 #ifndef CONFIG_AUXPCM_DISABLE
@@ -8133,7 +8144,20 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 
 	if (!strncmp(component->driver->name, WCD937X_DRV_NAME,
 	    strlen(WCD937X_DRV_NAME))) {
-		panic("Device is wcd937x, which is unsupported");
+		wcd937x_info_create_codec_entry(pdata->codec_root, component);
+		codec_variant = wcd937x_get_codec_variant(component);
+		dev_dbg(component->dev, "%s: variant %d\n",
+			 __func__, codec_variant);
+		if (codec_variant == WCD9370_VARIANT)
+			ret = snd_soc_add_component_controls(component,
+				msm_int_wcd9370_snd_controls,
+				ARRAY_SIZE(msm_int_wcd9370_snd_controls));
+		else if (codec_variant == WCD9375_VARIANT)
+			ret = snd_soc_add_component_controls(component,
+				msm_int_wcd9375_snd_controls,
+				ARRAY_SIZE(msm_int_wcd9375_snd_controls));
+		bolero_set_port_map(bolero_component,
+			ARRAY_SIZE(sm_port_map_wcd937x), sm_port_map_wcd937x);
 	} else if (!strncmp(component->driver->name, WCD938X_DRV_NAME,
 		   strlen(WCD938X_DRV_NAME))) {
 		wcd938x_info_create_codec_entry(pdata->codec_root, component);
@@ -8173,6 +8197,7 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 	codec_reg_done = true;
 	return 0;
 }
+
 
 static void msm_i2s_auxpcm_init(struct platform_device *pdev)
 {
@@ -8554,16 +8579,8 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 		wcd_mbhc_cfg.swap_gnd_mic = msm_swap_gnd_mic;
 	}
 
-#ifdef CONFIG_TARGET_PRODUCT_TAOYAO
-	if (wcd_mbhc_cfg.enable_usbc_analog)
-	{
-		pr_err("%s: Set swap_gnd_mic = msm_usbc_swap_gnd_mic \n");
-		wcd_mbhc_cfg.swap_gnd_mic = msm_usbc_swap_gnd_mic;
-	}
-#else
 	if (wcd_mbhc_cfg.enable_usbc_analog)
 		wcd_mbhc_cfg.swap_gnd_mic = msm_usbc_swap_gnd_mic;
-#endif
 
 	pdata->fsa_handle = of_parse_phandle(pdev->dev.of_node,
 					"fsa4480-i2c-handle", 0);
@@ -8625,6 +8642,9 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 
 	is_initial_boot = true;
 
+	/* Add QoS request for audio tasks */
+	msm_audio_add_qos_request();
+
 	return 0;
 err:
 	devm_kfree(&pdev->dev, pdata);
@@ -8638,6 +8658,7 @@ static int msm_asoc_machine_remove(struct platform_device *pdev)
 	snd_event_master_deregister(&pdev->dev);
 	snd_soc_unregister_card(card);
 	msm_i2s_auxpcm_deinit();
+	msm_audio_remove_qos_request();
 
 	return 0;
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
@@ -11,7 +12,6 @@
 #include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/component.h>
-#include <linux/mmhardware_sysfs.h>
 #include <sound/soc.h>
 #include <sound/tlv.h>
 #include <soc/soundwire.h>
@@ -1358,7 +1358,6 @@ static int wcd938x_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 		break;
 	case 2:
 		dmic2_left_en = WCD938X_DIGITAL_CDC_DMIC2_CTL;
-		/* fallthrough */
 	case 3:
 		dmic_clk_cnt = &(wcd938x->dmic_2_3_clk_cnt);
 		dmic_clk_reg = WCD938X_DIGITAL_CDC_DMIC_RATE_1_2;
@@ -1886,7 +1885,9 @@ static int wcd938x_enable_req(struct snd_soc_dapm_widget *w,
 		default:
 			break;
 		}
+
 		if (wcd938x->adc_count == 0) {
+
 			snd_soc_component_update_bits(component,
 					WCD938X_DIGITAL_CDC_ANA_CLK_CTL, 0x10, 0x00);
 			snd_soc_component_update_bits(component,
@@ -3074,7 +3075,6 @@ static const struct snd_kcontrol_new wcd9380_snd_controls[] = {
 
 	SOC_ENUM_EXT("RX HPH Mode", rx_hph_mode_mux_enum_wcd9380,
 		wcd938x_rx_hph_mode_get, wcd938x_rx_hph_mode_put),
-
 	SOC_ENUM_EXT("TX0 MODE", tx_mode_mux_enum_wcd9380,
 			wcd938x_tx_mode_get, wcd938x_tx_mode_put),
 	SOC_ENUM_EXT("TX1 MODE", tx_mode_mux_enum_wcd9380,
@@ -3856,7 +3856,7 @@ static int wcd938x_soc_codec_probe(struct snd_soc_component *component)
 	int variant;
 	int ret = -EINVAL;
 
-	dev_info(component->dev, "%s()\n", __func__);
+	dev_err(component->dev, "%s()\n", __func__);
 	wcd938x = snd_soc_component_get_drvdata(component);
 
 	if (!wcd938x)
@@ -4313,10 +4313,6 @@ static int wcd938x_bind(struct device *dev)
 	}
 	wcd938x->dev_up = true;
 
-	/* register codec hardware */
-#ifdef CONFIG_MMHARDWARE_DETECTION
-	register_kobj_under_mmsysfs(MM_HW_CODEC, MM_HARDWARE_SYSFS_CODEC_FOLDER);
-#endif
 	return ret;
 err_irq:
 	wcd_irq_exit(&wcd938x->irq_info, wcd938x->virq);

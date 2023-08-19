@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 /*
 * Add support for 24 and 32bit format for ASM loopback and playback session.
 */
-
 
 #include <linux/init.h>
 #include <linux/err.h>
@@ -1322,6 +1322,7 @@ static int msm_pcm_capture_copy(struct snd_pcm_substream *substream,
 	pr_debug("Size = %d\n", size);
 	pr_debug("fbytes = %lu\n", fbytes);
 	pr_debug("idx = %d\n", idx);
+	pr_debug("period_size = %d\n", prtd->pcm_count);
 	if (bufptr) {
 		xfer = fbytes;
 		if (xfer > size)

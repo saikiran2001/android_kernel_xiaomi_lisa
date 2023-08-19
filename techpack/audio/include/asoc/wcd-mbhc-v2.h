@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 #ifndef __WCD_MBHC_V2_H__
 #define __WCD_MBHC_V2_H__
@@ -139,11 +140,7 @@ do {                                                    \
 #define SPECIAL_HS_DETECT_TIME_MS (2 * 1000)
 #define MBHC_BUTTON_PRESS_THRESHOLD_MIN 250
 #define GND_MIC_SWAP_THRESHOLD 4
-#ifdef CONFIG_TARGET_PRODUCT_TAOYAO
-#define GND_MIC_USBC_SWAP_THRESHOLD 4
-#else
 #define GND_MIC_USBC_SWAP_THRESHOLD 2
-#endif
 #define WCD_FAKE_REMOVAL_MIN_PERIOD_MS 100
 #define HS_VREF_MIN_VAL 1400
 #define FW_READ_ATTEMPTS 15
@@ -264,7 +261,6 @@ enum {
 	MICB_PULLUP_DISABLE,
 	MICB_ENABLE,
 	MICB_DISABLE,
-	MICB2_DISABLE,
 };
 
 enum {

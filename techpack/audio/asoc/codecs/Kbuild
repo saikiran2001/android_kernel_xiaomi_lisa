@@ -235,9 +235,6 @@ INCS +=		$(COMMON_INC) \
 
 EXTRA_CFLAGS += $(INCS)
 
-ifeq ($(TARGET_PRODUCT), taoyao)
-	CDEFINES += -DCONFIG_TARGET_PRODUCT_TAOYAO
-endif
 
 CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
 		-DANI_LITTLE_BIT_ENDIAN \
@@ -271,34 +268,13 @@ KBUILD_EXTRA_SYMBOLS +=$(OUT)/obj/vendor/qcom/opensource/audio-kernel/soc/Module
 endif
 
 ifeq ($(KERNEL_BUILD), 1)
+	obj-y	+= wcd934x/
+	obj-y	+= wcd937x/
 	obj-y	+= wcd938x/
 	obj-y	+= bolero/
 	obj-y	+= wsa883x/
 	obj-y	+= rouleur/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), venus star mars haydn odin vili))
-	obj-y	+= cs35l41/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), cetus))
-	obj-y	+= cs35l45/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), renoir lisa))
-	obj-y	+= tfa98xx/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), taoyao))
-	obj-y	+= tfa9874/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), mona zijin))
-	obj-y	+= aw88263s/
-endif
-
-ifneq (,$(filter $(TARGET_PRODUCT), redwood))
-	obj-y	+= aw88263s_m20/
+	obj-y   += tfa98xx/
 endif
 
 # Module information used by KBuild framework
